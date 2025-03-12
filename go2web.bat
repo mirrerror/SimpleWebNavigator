@@ -1,0 +1,1 @@
+java -jar "D:\IdeaProjects\SimpleWebNavigator\target\SimpleWebNavigator-1.0-SNAPSHOT.jar" %*
