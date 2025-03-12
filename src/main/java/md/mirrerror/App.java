@@ -32,6 +32,9 @@ public class App {
             String host = url.getHost();
             int port = isHttps ? 443 : 80;
             String path = url.getPath().isEmpty() ? "/" : url.getPath();
+            if (url.getQuery() != null && !url.getQuery().isEmpty()) {
+                path += "?" + url.getQuery();
+            }
 
             Socket socket;
             if (isHttps) {
@@ -45,6 +48,9 @@ public class App {
 
                 writer.println("GET " + path + " HTTP/1.1");
                 writer.println("Host: " + host);
+                writer.println("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                writer.println("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                writer.println("Accept-Language: en-US,en;q=0.5");
                 writer.println("Connection: close");
                 writer.println("");
 
@@ -55,16 +61,28 @@ public class App {
                 }
 
                 String responseStr = response.toString();
-                if (responseStr.contains("HTTP/1.1 301") || responseStr.contains("HTTP/1.1 302")) {
+                if (responseStr.contains("HTTP/1.1 301") || responseStr.contains("HTTP/1.1 302") ||
+                        responseStr.contains("HTTP/1.1 303") || responseStr.contains("HTTP/1.1 307") ||
+                        responseStr.contains("HTTP/1.1 308")) {
                     String newLocation = extractRedirectLocation(responseStr);
                     if (newLocation != null) {
                         System.out.println("Redirecting to: " + newLocation);
-                        fetchUrl(newLocation); // Follow the redirect
+                        fetchUrl(newLocation);
                         return;
                     }
                 }
 
-                System.out.println(cleanHtml(responseStr));
+                int bodyStart = responseStr.indexOf("\r\n\r\n");
+                if (bodyStart == -1) {
+                    bodyStart = responseStr.indexOf("\n\n");
+                }
+
+                if (bodyStart != -1) {
+                    String body = responseStr.substring(bodyStart);
+                    System.out.println(cleanHtml(body));
+                } else {
+                    System.out.println(cleanHtml(responseStr));
+                }
             }
             socket.close();
 
@@ -80,11 +98,26 @@ public class App {
     }
 
     private static void search(String query) {
-        String searchUrl = "https://www.duckduckgo.com/html/?q=" + query.replace(" ", "+");
-        fetchUrl(searchUrl);
+        try {
+            String encodedQuery = URLEncoder.encode(query, "UTF-8");
+            String searchUrl = "https://duckduckgo.com/lite/?q=" + encodedQuery;
+            System.out.println("Searching for: " + query);
+            fetchUrl(searchUrl);
+        } catch (UnsupportedEncodingException e) {
+            System.out.println("Error encoding search query: " + e.getMessage());
+        }
     }
 
     private static String cleanHtml(String input) {
-        return input.replaceAll("<[^>]+>", "").replaceAll("&[a-z]+;", " ").trim();
+        String noTags = input.replaceAll("<[^>]+>", " ");
+
+        String decodedHtml = noTags.replaceAll("&amp;", "&")
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("&#39;", "'");
+
+        return decodedHtml.replaceAll("\\s+", " ").trim();
     }
 }
