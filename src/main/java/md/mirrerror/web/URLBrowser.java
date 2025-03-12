@@ -1,4 +1,4 @@
-package md.mirrerror;
+package md.mirrerror.web;
 
 import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
