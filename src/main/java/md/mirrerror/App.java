@@ -6,13 +6,13 @@ import java.nio.charset.StandardCharsets;
 public class App {
 
     public static void main(String[] args) {
-        URLBrowser urlBrowser = new URLBrowser();
-        ResponseParser responseParser = new ResponseParser();
-
         if (args.length < 1) {
             printHelp();
             return;
         }
+
+        URLBrowser urlBrowser = new URLBrowser();
+        ResponseParser responseParser = new ResponseParser();
 
         switch (args[0]) {
             case "-u":
