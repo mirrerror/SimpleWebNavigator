@@ -69,7 +69,10 @@ public class App {
                         return;
                     } else {
                         String response = urlBrowser.makeRequest(searchUrl);
-                        responseCacheManager.saveToCache(searchUrl, responseParser.displaySearchResults(response));
+                        String searchResults =  responseParser.displaySearchResults(response);
+                        System.out.println(searchResults);
+
+                        responseCacheManager.saveToCache(searchUrl, searchResults);
                         System.out.println("Caching response for: " + searchUrl);
                     }
                 } catch (Exception e) {
