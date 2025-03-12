@@ -1,4 +1,4 @@
-package md.mirrerror;
+package md.mirrerror.web;
 
 import com.google.gson.*;
 import java.io.*;
@@ -8,6 +8,7 @@ import java.util.Map;
 public class ResponseCacheManager {
 
     private static final String CACHE_FILE = "url_cache.json";
+
     private final Map<String, String> urlCache = new HashMap<>();
 
     public void loadCache() throws IOException {

@@ -1,4 +1,4 @@
-package md.mirrerror;
+package md.mirrerror.web;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
