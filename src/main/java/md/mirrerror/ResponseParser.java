@@ -3,16 +3,11 @@ package md.mirrerror;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ResponseParser {
-
-    private final Map<Integer, String> searchResults = new HashMap<>();
 
     public String parseResponse(String response) {
         int headerEnd = response.indexOf("\r\n\r\n");
@@ -51,8 +46,6 @@ public class ResponseParser {
     }
 
     public void displaySearchResults(String response) {
-        searchResults.clear();
-
         int headerEnd = response.indexOf("\r\n\r\n");
         if (headerEnd == -1) {
             System.out.println("Invalid response format");
@@ -119,7 +112,6 @@ public class ResponseParser {
 
         if (uniqueUrls.add(url)) {
             System.out.printf("%d. %s\n   %s\n\n", count + 1, title, url);
-            searchResults.put(count, url);
             return true;
         }
 

@@ -1,11 +1,12 @@
 package md.mirrerror;
 
+import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 public class App {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             printHelp();
             return;
@@ -13,6 +14,9 @@ public class App {
 
         URLBrowser urlBrowser = new URLBrowser();
         ResponseParser responseParser = new ResponseParser();
+        ResponseCacheManager responseCacheManager = new ResponseCacheManager();
+
+        responseCacheManager.loadCache();
 
         switch (args[0]) {
             case "-u":
@@ -23,10 +27,19 @@ public class App {
                 }
                 String url = args[1];
                 try {
-                    String response = urlBrowser.makeRequest(url);
-                    String cleanText = responseParser.parseResponse(response);
+                    String finalResponse = responseCacheManager.getFromCache(url);
 
-                    System.out.println(cleanText);
+                    if (finalResponse == null) {
+                        String response = urlBrowser.makeRequest(url);
+                        finalResponse = responseParser.parseResponse(response);
+
+                        System.out.println("Caching response for: " + url);
+                        responseCacheManager.saveToCache(url, finalResponse);
+                    } else {
+                        System.out.println("Using cached response for: " + url);
+                    }
+
+                    System.out.println(finalResponse);
                 } catch (Exception e) {
                     System.out.println("Error making request: " + e.getMessage());
                 }
@@ -47,8 +60,20 @@ public class App {
 
                 try {
                     String searchUrl = "https://duckduckgo.com/html/?q=" + URLEncoder.encode(searchTerm, StandardCharsets.UTF_8.toString());
-                    String response = urlBrowser.makeRequest(searchUrl);
-                    responseParser.displaySearchResults(response);
+
+                    String cachedResponse = responseCacheManager.getFromCache(searchUrl);
+
+                    if (cachedResponse != null) {
+                        System.out.println("Using cached search results for: " + searchTerm);
+                        responseParser.displaySearchResults(cachedResponse);
+                        return;
+                    } else {
+                        String response = urlBrowser.makeRequest(searchUrl);
+                        responseParser.displaySearchResults(response);
+
+                        System.out.println("Caching response for: " + searchUrl);
+                        responseCacheManager.saveToCache(searchUrl, response);
+                    }
                 } catch (Exception e) {
                     System.out.println("Error performing search: " + e.getMessage());
                 }
