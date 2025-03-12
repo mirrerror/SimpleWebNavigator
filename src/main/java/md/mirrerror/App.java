@@ -65,14 +65,12 @@ public class App {
 
                     if (cachedResponse != null) {
                         System.out.println("Using cached search results for: " + searchTerm);
-                        responseParser.displaySearchResults(cachedResponse);
+                        System.out.println(cachedResponse);
                         return;
                     } else {
                         String response = urlBrowser.makeRequest(searchUrl);
-                        responseParser.displaySearchResults(response);
-
+                        responseCacheManager.saveToCache(searchUrl, responseParser.displaySearchResults(response));
                         System.out.println("Caching response for: " + searchUrl);
-                        responseCacheManager.saveToCache(searchUrl, response);
                     }
                 } catch (Exception e) {
                     System.out.println("Error performing search: " + e.getMessage());

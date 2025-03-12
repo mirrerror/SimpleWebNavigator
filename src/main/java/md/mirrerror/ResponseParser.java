@@ -45,11 +45,11 @@ public class ResponseParser {
         return meaningfulContent.toString().trim();
     }
 
-    public void displaySearchResults(String response) {
+    public String displaySearchResults(String response) {
         int headerEnd = response.indexOf("\r\n\r\n");
         if (headerEnd == -1) {
             System.out.println("Invalid response format");
-            return;
+            return "";
         }
 
         String body = response.substring(headerEnd + 4);
@@ -59,6 +59,7 @@ public class ResponseParser {
 
         int count = 0;
         Set<String> uniqueUrls = new HashSet<>();
+        StringBuilder searchResultsBuilder = new StringBuilder();
 
         System.out.println("Search results:");
 
@@ -76,7 +77,7 @@ public class ResponseParser {
                 }
             }
 
-            if (addSearchResult(count, url, title, uniqueUrls)) count++;
+            if (addSearchResult(searchResultsBuilder, count, url, title, uniqueUrls)) count++;
         }
 
         if (count == 0) {
@@ -93,11 +94,13 @@ public class ResponseParser {
                     continue;
                 }
 
-                if (addSearchResult(count, url, title, uniqueUrls)) count++;
+                if (addSearchResult(searchResultsBuilder, count, url, title, uniqueUrls)) count++;
             }
         }
 
         if (count == 0) System.out.println("No search results have been found.");
+
+        return searchResultsBuilder.toString();
     }
 
     private String formatUrl(String url) {
@@ -105,13 +108,13 @@ public class ResponseParser {
         return url;
     }
 
-    private boolean addSearchResult(int count, String url, String title, Set<String> uniqueUrls) {
+    private boolean addSearchResult(StringBuilder searchResultsBuilder, int count, String url, String title, Set<String> uniqueUrls) {
         title = decodeHtmlEntities(title);
 
         url = formatUrl(url);
 
         if (uniqueUrls.add(url)) {
-            System.out.printf("%d. %s\n   %s\n\n", count + 1, title, url);
+            searchResultsBuilder.append(String.format("%d. %s\n   %s\n\n", count + 1, title, url));
             return true;
         }
 
