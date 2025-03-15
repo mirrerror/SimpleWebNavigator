@@ -4,6 +4,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,14 +13,46 @@ public class URLBrowser {
 
     private static final int MAX_REDIRECTS = 10;
 
-    private final Set<String> visitedUrls = new HashSet<>();
-    private int redirectCount = 0;
+    private final ResponseCacheManager responseCacheManager;
+    private final ResponseParser responseParser;
+
+    private final Set<String> visitedUrls;
+    private int redirectCount;
+
+    public URLBrowser() throws IOException {
+        this.responseCacheManager = new ResponseCacheManager();
+        this.responseParser = new ResponseParser();
+        this.visitedUrls = new HashSet<>();
+        this.redirectCount = 0;
+
+        this.responseCacheManager.loadCache();
+    }
 
     public String makeRequest(String urlString) throws Exception {
+        return makeRequest(urlString, false);
+    }
+
+    public String makeRequest(String urlString, boolean parseResponse) throws Exception {
         visitedUrls.clear();
         redirectCount = 0;
 
-        return fetchUrl(urlString);
+        String response = responseCacheManager.getFromCache(urlString);
+
+        if (response == null) {
+            response = fetchUrl(urlString);
+
+            System.out.println("Caching response for: " + urlString);
+            responseCacheManager.saveToCache(urlString, response);
+        } else {
+            System.out.println("Using cached response for: " + urlString);
+        }
+
+        return parseResponse ? responseParser.parseResponse(response) : response;
+    }
+
+    public String makeSearch(String searchTerm) throws Exception {
+        String searchUrl = "https://duckduckgo.com/html/?q=" + URLEncoder.encode(searchTerm, StandardCharsets.UTF_8.toString());
+        return responseParser.displaySearchResults(makeRequest(searchUrl));
     }
 
     private String fetchUrl(String urlString) throws Exception {
@@ -120,6 +153,14 @@ public class URLBrowser {
             baseUrl += "/";
         }
         return baseUrl;
+    }
+
+    public ResponseParser getResponseParser() {
+        return responseParser;
+    }
+
+    public ResponseCacheManager getResponseCacheManager() {
+        return responseCacheManager;
     }
 
 }
