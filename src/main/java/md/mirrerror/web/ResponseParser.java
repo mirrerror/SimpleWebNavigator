@@ -9,6 +9,12 @@ import java.util.regex.Pattern;
 
 public class ResponseParser {
 
+    private static final Pattern LINK_PATTERN = Pattern.compile("<a class=\"result__a\" href=\"([^\"]+)\"[^>]*>([^<]+)</a>");
+    private static final Pattern UDDG_PATTERN = Pattern.compile("uddg=([^&]+)");
+    private static final Pattern GENERIC_PATTERN = Pattern.compile("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]+)</a>");
+
+    private final Map<Integer, String> lastSearchResults = new HashMap<>();
+
     public String parseResponse(String response) {
         int headerEnd = response.indexOf("\r\n\r\n");
         if (headerEnd == -1) return "Invalid response format";
@@ -52,10 +58,11 @@ public class ResponseParser {
             return "";
         }
 
+        lastSearchResults.clear();
+
         String body = response.substring(headerEnd + 4);
 
-        Pattern linkPattern = Pattern.compile("<a class=\"result__a\" href=\"([^\"]+)\"[^>]*>([^<]+)</a>");
-        Matcher matcher = linkPattern.matcher(body);
+        Matcher matcher = LINK_PATTERN.matcher(body);
 
         int count = 0;
         Set<String> uniqueUrls = new HashSet<>();
@@ -68,8 +75,7 @@ public class ResponseParser {
             String title = matcher.group(2).trim();
 
             if (url.startsWith("/l/?")) {
-                Pattern uddgPattern = Pattern.compile("uddg=([^&]+)");
-                Matcher uddgMatcher = uddgPattern.matcher(url);
+                Matcher uddgMatcher = UDDG_PATTERN.matcher(url);
                 if (uddgMatcher.find()) {
                     try {
                         url = URLDecoder.decode(uddgMatcher.group(1), StandardCharsets.UTF_8.toString());
@@ -81,8 +87,7 @@ public class ResponseParser {
         }
 
         if (count == 0) {
-            Pattern genericPattern = Pattern.compile("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]+)</a>");
-            Matcher genericMatcher = genericPattern.matcher(body);
+            Matcher genericMatcher = GENERIC_PATTERN.matcher(body);
 
             while (genericMatcher.find() && count < 10) {
                 String url = genericMatcher.group(1);
@@ -103,7 +108,7 @@ public class ResponseParser {
         return searchResultsBuilder.toString();
     }
 
-    private String formatUrl(String url) {
+    private String formatSearchUrl(String url) {
         if (!url.startsWith("http")) return "https://duckduckgo.com" + url;
         return url;
     }
@@ -111,14 +116,26 @@ public class ResponseParser {
     private boolean addSearchResult(StringBuilder searchResultsBuilder, int count, String url, String title, Set<String> uniqueUrls) {
         title = decodeHtmlEntities(title);
 
-        url = formatUrl(url);
+        url = formatSearchUrl(url);
 
         if (uniqueUrls.add(url)) {
+            lastSearchResults.put(count + 1, url);
             searchResultsBuilder.append(String.format("%d. %s\n   %s\n\n", count + 1, title, url));
             return true;
         }
 
         return false;
+    }
+
+    public String getSearchResult(int index) {
+        String url = lastSearchResults.get(index);
+
+        if (url == null) {
+            System.out.println("Invalid search result index");
+            return null;
+        }
+
+        return url;
     }
 
     private String decodeHtmlEntities(String input) {

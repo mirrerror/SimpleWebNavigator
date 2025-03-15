@@ -1,12 +1,9 @@
 package md.mirrerror;
 
-import md.mirrerror.web.ResponseCacheManager;
-import md.mirrerror.web.ResponseParser;
 import md.mirrerror.web.URLBrowser;
 
 import java.io.IOException;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public class Main {
 
@@ -17,10 +14,6 @@ public class Main {
         }
 
         URLBrowser urlBrowser = new URLBrowser();
-        ResponseParser responseParser = new ResponseParser();
-        ResponseCacheManager responseCacheManager = new ResponseCacheManager();
-
-        responseCacheManager.loadCache();
 
         switch (args[0]) {
             case "-u":
@@ -29,24 +22,15 @@ public class Main {
                     System.out.println("Usage: go2web -u <URL>");
                     return;
                 }
+
                 String url = args[1];
+
                 try {
-                    String finalResponse = responseCacheManager.getFromCache(url);
-
-                    if (finalResponse == null) {
-                        String response = urlBrowser.makeRequest(url);
-                        finalResponse = responseParser.parseResponse(response);
-
-                        System.out.println("Caching response for: " + url);
-                        responseCacheManager.saveToCache(url, finalResponse);
-                    } else {
-                        System.out.println("Using cached response for: " + url);
-                    }
-
-                    System.out.println(finalResponse);
+                    System.out.println(urlBrowser.makeRequest(url, true));
                 } catch (Exception e) {
                     System.out.println("Error making request: " + e.getMessage());
                 }
+
                 break;
             case "-s":
                 if (args.length < 2) {
@@ -63,21 +47,28 @@ public class Main {
 
 
                 try {
-                    String searchUrl = "https://duckduckgo.com/html/?q=" + URLEncoder.encode(searchTerm, StandardCharsets.UTF_8.toString());
+                    System.out.println(urlBrowser.makeSearch(searchTerm));
 
-                    String cachedResponse = responseCacheManager.getFromCache(searchUrl);
+                    System.out.print("Type the number of the search result you want to view, or press Enter to cancel: ");
 
-                    if (cachedResponse != null) {
-                        System.out.println("Using cached search results for: " + searchTerm);
-                        System.out.println(cachedResponse);
-                        return;
+                    Scanner scanner = new Scanner(System.in);
+                    String input = scanner.nextLine().trim();
+
+                    if (input.isEmpty()) {
+                        System.out.println("Search canceled.");
                     } else {
-                        String response = urlBrowser.makeRequest(searchUrl);
-                        String searchResults =  responseParser.displaySearchResults(response);
-                        System.out.println(searchResults);
-
-                        responseCacheManager.saveToCache(searchUrl, searchResults);
-                        System.out.println("Caching response for: " + searchUrl);
+                        try {
+                            int index = Integer.parseInt(input);
+                            if (index > 0 && index <= 10) {
+                                String resultUrl = urlBrowser.getResponseParser().getSearchResult(index);
+                                if (resultUrl != null)
+                                    System.out.println(urlBrowser.makeRequest(resultUrl, true));
+                            } else {
+                                System.out.println("Invalid search result index");
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid input. Please enter a number.");
+                        }
                     }
                 } catch (Exception e) {
                     System.out.println("Error performing search: " + e.getMessage());
