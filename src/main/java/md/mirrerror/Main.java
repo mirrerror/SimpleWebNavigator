@@ -2,7 +2,9 @@ package md.mirrerror;
 
 import md.mirrerror.web.URLBrowser;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Scanner;
 
 public class Main {
@@ -61,8 +63,10 @@ public class Main {
                             int index = Integer.parseInt(input);
                             if (index > 0 && index <= 10) {
                                 String resultUrl = urlBrowser.getResponseParser().getSearchResult(index);
-                                if (resultUrl != null)
+                                if (resultUrl != null) {
                                     System.out.println(urlBrowser.makeRequest(resultUrl, true));
+                                    Desktop.getDesktop().browse(new URI(resultUrl));
+                                }
                             } else {
                                 System.out.println("Invalid search result index");
                             }
